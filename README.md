@@ -35,7 +35,7 @@ https://bitbucket.org/Aussiemon/gauntlet-slayer-edition-source-code/src/main/
 
 ## Background
 
-_Gauntlet: Slayer Edition_'s Lua files are _LuaJIT 2.0_ bytecode in Bitsquid bundles. The bundles are zipped with **zlib** in a format that matches the original _Warhammer: Vermintide 1_ bundles; `0xf0000004`. Vermintide 1 evemtually switched to a new format with small header changes (`0xf0000005`). _Warhammer: Vermintide 2_ started on `0xf0000005`, but switched to **zstd** and a completely different format. _Warhammer: Darktide_ started on `0xf0000006`, but switched to Oodle before launch. Luckily, my upgraded version of _walterr_'s old NodeJS extraction script still works on Gauntlet's `0xf0000004`.
+_Gauntlet: Slayer Edition_'s Lua files are LuaJIT 2.0 bytecode in Bitsquid bundles. The bundles are zipped with _zlib_ in a format that matches the original _Warhammer: Vermintide 1_ bundles; `0xf0000004`. Vermintide 1 eventually switched to a new format with small header changes (`0xf0000005`). _Warhammer: Vermintide 2_ started on `0xf0000005`, but switched to _zstd_ and a completely different format. _Warhammer: Darktide_ started on `0xf0000006`, but switched to Oodle before launch. Luckily, my upgraded version of _walterr_'s old NodeJS extraction script still works on Gauntlet's `0xf0000004`.
 
 With the files extracted, decompilation is as simple as using luajit-decompiler-v2. Only one file failed decompilation - interestingly with both the legacy LJD and the new decompiler. WB is probably less friendly with decompiled game files than Fatshark, so the decompilation is hosted elsewhere.
 
