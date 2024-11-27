@@ -1,0 +1,310 @@
+print("Mods are running!")
+
+-- #####################################################################################################################
+-- ##### Custom implementation of file loading  ########################################################################
+-- #####################################################################################################################
+
+local mod_directory = "./mods"
+
+local assert = assert
+local ipairs = ipairs
+local loadstring = loadstring
+local pairs = pairs
+local pcall = pcall
+local print = print
+local rawget = rawget
+local rawset = rawset
+local select = select
+local setmetatable = setmetatable
+local string = string
+local table = table
+local tonumber = tonumber
+local tostring = tostring
+
+-- Mod initialization code --
+local debug = rawget(_G, "debug")
+local io    = rawget(_G, "io")
+local ffi   = require("ffi")
+
+Mods = {
+  file = {},
+  message = {},
+  lua = {
+	debug = debug,
+	io = io,
+	ffi = ffi,
+	loadstring = loadstring,
+	os = os
+  }
+}
+
+local get_file_path = function(local_path, file_name, file_extension)
+  local file_path = mod_directory
+
+  if local_path and local_path ~= "" then
+	file_path = file_path .. "/" .. local_path
+  end
+
+  if file_name and file_name ~= "" then
+	file_path = file_path .. "/" .. file_name
+  end
+
+  if file_extension and file_extension ~= "" then
+	file_path = file_path .. "." .. file_extension
+  else
+	file_path = file_path .. ".lua"
+  end
+
+  if string.find(file_path, "\\") then
+	file_path = string.gsub(file_path, "\\", "/")
+  end
+
+  return file_path
+end
+Mods.file.get_file_path = get_file_path
+
+local function read_or_execute(file_path, args, return_type)
+  local f = io.open(file_path, "r")
+
+  local result
+  if return_type == "lines" then
+	result = {}
+	for line in f:lines() do
+	  if line then
+		-- Trim whitespace
+		line = line:gsub("^%s*(.-)%s*$", "%1")
+
+		-- Handle empty lines and single-line comments
+		if line ~= "" and line:sub(1, 2) ~= "--" then
+		  table.insert(result, line)
+		end
+	  end
+	end
+  else
+	result = f:read("*all")
+
+	-- Either execute the data or leave it unmodified
+	if return_type == "exec_result" or return_type == "exec_boolean" then
+	  local func = loadstring(result, file_path)
+	  result = func(args)
+	end
+  end
+
+  f:close()
+  if return_type == "exec_boolean" then
+	return true
+  else
+	return result
+  end
+end
+
+local function handle_io(local_path, file_name, file_extension, args, safe_call, return_type)
+
+  local file_path = get_file_path(local_path, file_name, file_extension)
+  print("[Mod] Loading " .. file_path)
+
+  -- Check for the existence of the path
+  local ff, err_io = io.open(file_path, "r")
+  if ff ~= nil then
+	ff:close()
+
+	-- Initialize variables
+	local status, result
+
+	-- If this is a safe call, wrap it in a pcall
+	if safe_call then
+	  status, result = pcall(function ()
+		return read_or_execute(file_path, args, return_type)
+	  end)
+
+	  -- If status is failed, print the user and return false
+	  if not status then
+		print("[Mod] Error processing '" .. file_path .. "': " .. tostring(result))
+		return false
+	  end
+
+	-- If this isn't a safe call, load without a pcall
+	else
+	  result = read_or_execute(file_path, args, return_type)
+	end
+
+	return result
+
+  -- If the initial open failed, report failure
+  else
+	print("[Mod] Error opening '" .. file_path .. "': " .. tostring(err_io))
+	return false
+  end
+end
+
+local function exec(local_path, file_name, file_extension, args)
+  return handle_io(local_path, file_name, file_extension, args, true, "exec_boolean")
+end
+Mods.file.exec = exec
+
+local function exec_unsafe(local_path, file_name, file_extension, args)
+  return handle_io(local_path, file_name, file_extension, args, false, "exec_boolean")
+end
+Mods.file.exec_unsafe = exec_unsafe
+
+local function exec_with_return(local_path, file_name, file_extension, args)
+  return handle_io(local_path, file_name, file_extension, args, true, "exec_result")
+end
+Mods.file.exec_with_return = exec_with_return
+
+local function exec_unsafe_with_return(local_path, file_name, file_extension, args)
+  return handle_io(local_path, file_name, file_extension, args, false, "exec_result")
+end
+Mods.file.exec_unsafe_with_return = exec_unsafe_with_return
+
+local function mod_dofile(file_path, args)
+  return handle_io(file_path, nil, nil, args, true, "exec_result")
+end
+Mods.file.dofile = mod_dofile
+
+local function read_content(file_path, file_extension)
+  return handle_io(file_path, nil, file_extension, nil, true, "data")
+end
+Mods.file.read_content = read_content
+
+local function read_content_to_table(file_path, file_extension)
+  return handle_io(file_path, nil, file_extension, nil, true, "lines")
+end
+Mods.file.read_content_to_table = read_content_to_table
+
+local file_exists = function(name)
+  local f = io.open(name,"r")
+
+  if f ~= nil then
+	io.close(f)
+	return true
+  else
+	return false
+  end
+end
+Mods.file.exists = file_exists
+
+-- Load remaining base modules
+exec("base/function", "require")
+
+local init_mod_framework = function()
+  -- Expose classes at the global table
+  exec("base/function", "class")
+
+  print("[GMF]: Initializing basic mod hook system...")
+  exec("base/function", "hook")
+end
+
+-- #####################################################################################################################
+-- ##### Dev console at startup to get logs  ###########################################################################
+-- #####################################################################################################################
+
+local _console_data ={
+	enabled = false,
+	original_print = print
+}
+
+local function open_dev_console()
+  if not _console_data.enabled then
+	local print_hook_function = function(func, ...)
+	  if _console_data.enabled then
+		CommandWindow.print(...)
+		func(...)
+	  else
+		func(...)
+	  end
+	end
+
+	print = function(...)
+	  print_hook_function(_console_data.original_print, ...)
+	end
+
+	CommandWindow.open("Developer console")
+	_console_data.enabled = true
+  end
+end
+
+-- #####################################################################################################################
+-- ##### Contents of real lua\boot\boot.lua  ###########################################################################
+-- #####################################################################################################################
+
+if not Unit.num_cloths then
+	Unit.num_cloths = function ()
+		return 0
+	end
+end
+
+local Profiler_start, Profiler_stop = Profiler.start, Profiler.stop
+local game = _G.Game
+
+function init()
+	Profiler_start("Init")
+	rawset(_G, "SCRIPT_IS_RELOADING", false)
+	Script.configure_garbage_collection(Script.MINIMUM_COLLECT_TIME_MS, 0, Script.MAXIMUM_COLLECT_TIME_MS, 2)
+	require("foundation/foundation_setup")
+	foundation_setup()
+	rawset(_G, "LEVEL_EDITOR_TEST", rawget(_G, "LEVEL_EDITOR_TEST") or false)
+
+	if _G.IS_PC then
+		-- Nothing
+	elseif _G.IS_PS4 then
+		Voice.start_service()
+	end
+
+	-- Mod changes ------------------------------------------------
+	open_dev_console() -- comment to remove dev console
+	require("lua/boot/game")
+	init_mod_framework()
+	
+	-- Early require
+	require("lua/states/state_splash")
+
+	-- Skip splash view
+	Mods.hook.set("Base", "_G.CLASS.StateSplash.setup_screens", function (func, self, ...)
+	  self.screens = {}
+	  return func(self, ...)
+	end)
+	
+	-- Skip splash view
+	Mods.hook.set("Base", "_G.CLASS.StateSplash.update", function (func, self, ...)
+		local all_online = _G.Game:are_all_packages_online(self.packages)
+		all_online = (not _G.Game:are_all_packages_online(_G.SCRIPT_PACKAGES) or self:do_require_before_exit()) and all_online
+
+		if self.save_loaded and self.tus_done and self.entitlements_done and all_online then
+			GUI:swallow_input()
+			self:on_done()
+		end
+	end)
+	-- -------------------------------------------------------------
+	
+	Game:setup()
+	game = Game
+
+	Profiler_stop()
+end
+
+function shutdown()
+	Profiler_start("Shutdown")
+	game:teardown()
+	foundation_shutdown()
+
+	if _G.IS_PS4 then
+		Voice.stop_service()
+	end
+
+	Profiler_stop()
+end
+
+function update(dt)
+	Profiler_start("Update")
+	game:update(dt)
+	Profiler_stop()
+end
+
+function render()
+	Profiler_start("Render")
+	game:render()
+	Profiler_stop()
+end
+
+rawset(_G, "SCRIPT_IS_RELOADING", true)
