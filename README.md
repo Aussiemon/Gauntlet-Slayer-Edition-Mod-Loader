@@ -16,9 +16,9 @@ https://bitbucket.org/Aussiemon/gauntlet-slayer-edition-source-code/src/main/
 
 ## Installation
 
-1. Extract the contents to your game folder.
+1. Extract the contents of the GoG or Steam version to your game folder. Choose the version that matches your platform.
   - `mod_loader` should be at the folder root.
-  - The modified game bundle `9e13b2414b41b842` should be in the `Contents` folder, or wherever the rest of the game bundles are. Replace the existing file.
+  - The modified game bundle `9e13b2414b41b842` should be in the `Contents` folder, or wherever the rest of the game bundles are. Replace the existing file. It should not have a file extension.
 2. Start the game. If the game opens to the main menu with a developer console in a second window, mods are active.
 
 ## Making mods
