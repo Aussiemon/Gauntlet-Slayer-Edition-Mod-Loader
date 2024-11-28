@@ -1,6 +1,6 @@
 ## Gauntlet: Slayer Edition Mod Loader
 
-Rudimentary mod loader using a modified game bundle as an entrypoint. Similar to Darktide's implementation, but no mod framework support yet or maybe ever. It depends on motivation, and I've never actually played the game.
+Rudimentary mod loader using a modified game bundle as an entrypoint. Similar to Darktide's mod loader, but without DMF functionality.
 
 Features:
 
@@ -9,7 +9,7 @@ Features:
 3. File replacement system (every file in the `mods` folder will be loaded before same-named game scripts).
 4. Skips the splash screens as a proof of concept.
 
-Made for the GOG version of Gauntlet: Slayer Edition, but should work with all PC versions.
+Made for the GOG and Steam versions of Gauntlet: Slayer Edition.
 
 ## Gauntlet: Slayer Edition Source Code
 https://bitbucket.org/Aussiemon/gauntlet-slayer-edition-source-code/src/main/
@@ -18,7 +18,7 @@ https://bitbucket.org/Aussiemon/gauntlet-slayer-edition-source-code/src/main/
 
 1. Extract the contents of the GoG or Steam version to your game folder. Choose the version that matches your platform.
   - `mod_loader` should be at the folder root.
-  - The modified game bundle `9e13b2414b41b842` should be in the `Contents` folder, or wherever the rest of the game bundles are. Replace the existing file. It should not have a file extension.
+  - The modified game bundle `9e13b2414b41b842` should be placed in the `contents` folder. Replace the existing file. It should not have a file extension.
 2. Start the game. If the game opens to the main menu with a developer console in a second window, mods are active.
 
 ## Making mods
